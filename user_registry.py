@@ -1,6 +1,5 @@
 from repo import UserRepository, RepoError, NotFoundError, UniqueViolationError
 
-
 def parse_id(arg: str) -> int:
     if arg is None or arg.strip() == "":
         raise ValueError("id is required")
@@ -38,11 +37,75 @@ def print_users(users: list[dict]):
     for u in users:
         print_user(u)
 
-dsn = "host=localhost port=5432 dbname=user_registry user=stepan password=newpassword"
-repo = UserRepository(dsn)
+def handle_list(repo, args):
+    users = repo.list_users()
+    print_users(users)
+
+def handle_get(repo, args):
+    raw_id = args[0] if args else None
+    user_id = parse_id(raw_id)
+    user = repo.get_user(user_id)
+    print_user(user)
+
+def handle_delete(repo, args):
+    raw_id = args[0] if args else None
+    user_id = parse_id(raw_id)
+    user = repo.delete_user(user_id)
+    print_user(user)
+
+def handle_add(repo, args):
+    name = input("Name: ").strip()
+    phone = input("Phone: ").strip()
+    city = input("City: ").strip()
+
+    if not name or not phone or not city:
+        raise ValueError("fields must not be empty")
+    user = repo.add_user(name, phone, city)
+    print_user(user)
+
+def handle_update(repo, args):
+    raw_id = args[0] if args else None
+    user_id = parse_id(raw_id)
+
+    current = repo.get_user(user_id)
+
+    new_name = input(f"Name [{current['name']}]: ").strip()
+    new_phone = input(f"Phone [{current['phone']}]: ").strip()
+    new_city = input(f"City [{current['city']}]: ").strip()
+
+    name = new_name or current["name"]
+    phone = new_phone or current["phone"]
+    city = new_city or current["city"]
+
+    user = repo.update_user(user_id, name, phone, city)
+    print_user(user)
+
+
+def handle_search(repo, args):
+    text = " ".join(args).strip()
+    if not text:
+        raise ValueError("search text is required")
+    users = repo.search_users(text)
+    print_users(users)
+
+def handle_help(repo, args):
+    print_help()
 
 def main() -> None:
     print("User Registry CLI (PostgreSQL). Type 'help' for commands.")
+    commands = {
+        "list": handle_list,
+        "get": handle_get,
+        "delete": handle_delete,
+        "add": handle_add,
+        "update": handle_update,
+        "search": handle_search,
+        "help": handle_help,
+    }
+
+    dsn = "host=localhost port=5432 dbname=user_registry user=stepan password=newpassword"
+    repo = UserRepository(dsn)
+
     while True:
         raw = input("> ").strip()
         if raw == "":
@@ -52,109 +115,28 @@ def main() -> None:
         cmd = parts[0].lower()
         args = parts[1:]
 
-        if cmd == "help":
-            print_help()
-
-        elif cmd == "list":
-            try:
-                users = repo.list_users()
-                print_users(users)
-            except RepoError as e:
-                print(f"db error: {e}")
-
-        elif cmd == "get":
-            raw_id = args[0] if args else None
-
-            try:
-                user_id = parse_id(raw_id)
-                user = repo.get_user(user_id)
-                print_user(user)
-            except ValueError as e:
-                print(f"id error: {e}")
-            except NotFoundError as e:
-                print(f"user not found: {e}")
-            except RepoError as e:
-                 print(f"db error: {e}")
-
-        elif cmd == "delete":
-            raw_id = args[0] if args else None
-
-            try:
-                user_id = parse_id(raw_id)
-                user = repo.delete_user(user_id)
-                print_user(user)
-            except ValueError as e:
-                print(f"id error: {e}")
-            except NotFoundError as e:
-                print(f"user not found: {e}")
-            except RepoError as e:
-                print(f"db error: {e}")
-
-        elif cmd == "add":
-            name = input("Name: ").strip()
-            if not name:
-                print("input error: fields must not be empty")
-                continue
-            phone = input("Phone: ").strip()
-            if not phone:
-                print("input error: fields must not be empty")
-                continue
-            city = input("City: ").strip()
-            if not city:
-                print("input error: fields must not be empty")
-                continue
-
-            try:
-                user = repo.add_user(name, phone, city)
-                print_user(user)
-            except UniqueVoilationError as e:
-                print(f"phone already exists: {e}")
-            except RepoError as e: print(f"db error: {e}")
-
-        elif cmd == "update":
-            raw_id = args[0] if args else None
-
-            try:
-                user_id = parse_id(raw_id)
-                current = repo.get_user(user_id)
-
-                new_name = input(f"Name [{current['name']}]: ").strip()
-                new_phone =  input(f"Phone [{current['phone']}]: ").strip()
-                new_city = input(f"City [{current['city']}]: ").strip()
-
-                name = new_name or current["name"]
-                phone = new_phone or current["phone"]
-                city = new_city or current["city"]
-
-                user = repo.update_user(user_id, name, phone, city)
-                print_user(user)
-            except ValueError as e:
-                print(f"id error: {e}")
-            except NotFoundError as e:
-                print(f"user not found: {e}")
-            except UniqueViolationError as e:
-                print(f"phone already exists: {e}")
-            except RepoError as e:
-                print(f"db error: {e}")
-
-        elif cmd == "search":
-            text = ' '.join(args).strip()
-            if not text:
-                print("input error: fields must not be empty")
-                continue
-            try:
-                users = repo.search_users(text)
-                print_users(users)
-            except RepoError as e:
-                print(f"db error: {e}")
-
-
-        elif cmd == "exit":
+        if cmd == "exit":
             print("bye")
             break
-        else:
-            print("unknown command")
 
+        handler = commands.get(cmd)
 
+        if not handler:
+            print("Unknown command")
+            continue
+
+        try:
+            handler(repo, args)
+        except ValueError as e:
+            print(f"input error: {e}")
+
+        except NotFoundError as e:
+            print(f"user not found: {e}")
+
+        except UniqueViolationError as e:
+            print(f"phone already exists: {e}")
+
+        except RepoError as e:
+            print(f"db error: {e}")
 if __name__ == "__main__":
     main()
