@@ -1,5 +1,14 @@
 from repo import UserRepository, RepoError, NotFoundError, UniqueViolationError
+import logging
 import os
+
+def create_repo() -> UserRepository:
+    dsn = os.getenv("USER_REGISTRY_DSN")
+
+    if not dsn:
+        raise RuntimeError("USER_REGISTRY_DSN is not set")
+
+    return UserRepository(dsn)
 
 def parse_id(arg: str) -> int:
     if arg is None or arg.strip() == "":
@@ -98,7 +107,21 @@ def handle_help(repo, args):
         raise ValueError("help takes no arguments")
     print_help()
 
+def setup_logging() -> logging.Logger:
+    level_name = os.getenv("LOG_LEVEL", "INFO").upper()
+    level = getattr(logging, level_name, logging.INFO)
+
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
+    return logging.getLogger("user_registry")
+
+
 def main() -> None:
+    logger = setup_logging()
+    logger.info("starting CLI")
+
     print("User Registry CLI (PostgreSQL). Type 'help' for commands.")
     commands = {
         "list": handle_list,
@@ -117,7 +140,7 @@ def main() -> None:
         print("config error: set USER_REGISTRY_DSN environment variable")
         return
 
-    repo = UserRepository(dsn)
+    repo = create_repo()
 
     while True:
         raw = input("> ").strip()
@@ -129,6 +152,7 @@ def main() -> None:
         args = parts[1:]
 
         if cmd == "exit":
+            logger.info("exit")
             print("bye")
             break
 
@@ -140,16 +164,21 @@ def main() -> None:
 
         try:
             handler(repo, args)
+
         except ValueError as e:
+            logger.info("command: %s args=%s", cmd, args)
             print(f"input error: {e}")
 
         except NotFoundError as e:
+            logger.info("command: %s args=%s", cmd, args)
             print(f"user not found: {e}")
 
         except UniqueViolationError as e:
+            logger.info("command: %s args=%s", cmd, args)
             print(f"phone already exists: {e}")
 
         except RepoError as e:
+            logger.info("command: %s args=%s", cmd, args)
             print(f"db error: {e}")
 if __name__ == "__main__":
     main()

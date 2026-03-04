@@ -1,5 +1,8 @@
 import psycopg
 from psycopg.rows import dict_row
+import logging
+logger = logging.getLogger("user_registry.repo")
+
 
 class RepoError(Exception):
     pass
@@ -31,6 +34,7 @@ class UserRepository:
                     cur.execute(f"SELECT {self.FIELDS} FROM users ORDER BY id;")
                     return  cur.fetchall()
         except psycopg.Error as e:
+            logger.exception("db error in list_users")
             raise RepoError("db error in list_users") from e
 
     def add_user(self, name, phone, city):
@@ -44,6 +48,7 @@ class UserRepository:
         except psycopg.errors.UniqueViolation as e:
             raise UniqueViolationError("phone already exists") from e
         except psycopg.Error as e:
+            logger.exception("db error in add_user")
             raise RepoError("db error in add_user") from e
 
 
@@ -57,6 +62,7 @@ class UserRepository:
                     row = cur.fetchone()
                     return self._require_row(row, user_id)
         except psycopg.Error as e:
+            logger.exception("db error in get_user")
             raise RepoError("db error in get_user") from e
 
 
@@ -70,6 +76,7 @@ class UserRepository:
                     row = cur.fetchone()
                     return self._require_row(row, user_id)
         except psycopg.Error as e:
+            logger.exception("db error in delete_user")
             raise RepoError("db error in delete_user") from e
 
     def update_user(self, user_id, name, phone, city):
@@ -84,6 +91,7 @@ class UserRepository:
         except psycopg.errors.UniqueViolation as e:
             raise UniqueViolationError("phone already exists") from e
         except psycopg.Error as e:
+            logger.exception("db error in update_user")
             raise RepoError("db error in update_user") from e
 
     def search_users(self, text):
@@ -96,4 +104,5 @@ class UserRepository:
                     )
                     return cur.fetchall()
         except psycopg.Error as e:
+            logger.exception("db error in search_users")
             raise RepoError("db error in search_users") from e
