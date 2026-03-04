@@ -134,6 +134,19 @@ Repository maps low-level database errors to domain-level exceptions:
 
 This prevents infrastructure details from leaking into CLI.
 
+## Logging
+The application uses Python standard logging.
+Log level can be configured via environment variable:
+```
+LOG_LEVEL=INFO
+```
+Example:
+```bash
+export LOG_LEVEL=DEBUG
+```
+Logs are printed to the console and include timestamps, log level, logger name, and message.
+
+
 ## Author
 Stepan Salmin
 Backend learning project (Python + PostgreSQL)
