@@ -1,4 +1,5 @@
 from repo import UserRepository, RepoError, NotFoundError, UniqueViolationError
+import os
 
 def parse_id(arg: str) -> int:
     if arg is None or arg.strip() == "":
@@ -109,7 +110,13 @@ def main() -> None:
         "help": handle_help,
     }
 
-    dsn = "host=localhost port=5432 dbname=user_registry user=stepan password=newpassword"
+
+    dsn = os.getenv("USER_REGISTRY_DSN")
+
+    if not dsn:
+        print("config error: set USER_REGISTRY_DSN environment variable")
+        return
+
     repo = UserRepository(dsn)
 
     while True:
