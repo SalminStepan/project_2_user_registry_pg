@@ -57,10 +57,21 @@ export USER_REGISTRY_DSN="host=localhost port=5432 dbname=user_registry user=ste
 Replace `YOUR_PASSWORD` with your PostgreSQL password.
 
 ## Running the CLI
+Before starting the CLI you must set the database DSN via environment variable.
+Example:
+
+```bash
+export USER_REGISTRY_DSN="host=localhost port=5432 dbname=user_registry user=stepan password=YOUR_PASSWORD"
+```
+
+Then start the CLI:
+
 ```bash
 python3 user_registry.py
 ```
+
 Example session:
+
 ```
 > list
 1: Ivan | +77001234567 | Almaty
@@ -73,6 +84,8 @@ City: New York
 > search york
 2: Sergei | +7777777777 | New York
 ```
+
+
 ## Supported CLI Commands
 ```
 help
