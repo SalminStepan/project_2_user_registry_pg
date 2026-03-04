@@ -38,6 +38,8 @@ def print_users(users: list[dict]):
         print_user(u)
 
 def handle_list(repo, args):
+    if args:
+        raise ValueError("list takes no arguments")
     users = repo.list_users()
     print_users(users)
 
@@ -54,6 +56,8 @@ def handle_delete(repo, args):
     print_user(user)
 
 def handle_add(repo, args):
+    if args:
+        raise ValueError("add takes no arguments")
     name = input("Name: ").strip()
     phone = input("Phone: ").strip()
     city = input("City: ").strip()
@@ -89,6 +93,8 @@ def handle_search(repo, args):
     print_users(users)
 
 def handle_help(repo, args):
+    if args:
+        raise ValueError("help takes no arguments")
     print_help()
 
 def main() -> None:
